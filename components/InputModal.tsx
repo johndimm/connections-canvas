@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
-import { ClipboardList, Play, RotateCcw, Image as ImageIcon, Loader2 } from 'lucide-react';
-import { extractWordsFromImage } from '../services/geminiService';
+import { ClipboardList, Play, RotateCcw, Image as ImageIcon, Loader2, Globe } from 'lucide-react';
+import { extractWordsFromImage, fetchDailyPuzzle } from '../services/geminiService';
 
 interface InputModalProps {
   isOpen: boolean;
@@ -49,6 +49,30 @@ export const InputModal: React.FC<InputModalProps> = ({ isOpen, onStart }) => {
       setError('');
   };
 
+  const handleLoadDaily = async () => {
+      setIsAnalyzing(true);
+      setError('');
+      try {
+          const { words, source } = await fetchDailyPuzzle();
+          if (words.length > 0) {
+              setText(words.join("\n"));
+              if (words.length === 16) {
+                  // If we are confident, just start
+                  // onStart(words); // Optional: Uncomment to auto-start if perfect
+                  setError(`Loaded today's words${source ? ` from ${source}` : ''}. Click Start!`);
+              } else {
+                  setError(`Found ${words.length} words${source ? ` from ${source}` : ''}. Please check and fix.`);
+              }
+          } else {
+              setError("Could not find today's puzzle. Try uploading a screenshot instead.");
+          }
+      } catch (e) {
+          setError("Failed to search for daily puzzle.");
+      } finally {
+          setIsAnalyzing(false);
+      }
+  };
+
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -72,11 +96,12 @@ export const InputModal: React.FC<InputModalProps> = ({ isOpen, onStart }) => {
 
       const extractedWords = await extractWordsFromImage(base64Data, file.type);
       
-      if (extractedWords && extractedWords.length > 0) {
+      if (extractedWords && extractedWords.length === 16) {
+        // Success! Immediately start the game.
+        onStart(extractedWords);
+      } else if (extractedWords && extractedWords.length > 0) {
         setText(extractedWords.join("\n"));
-        if (extractedWords.length !== 16) {
-           setError(`Found ${extractedWords.length} words. Please verify the list.`);
-        }
+        setError(`Found ${extractedWords.length} words. Please verify the list and click "Start Canvas".`);
       } else {
         setError("Could not find words in the image. Please try again or type manually.");
       }
@@ -102,7 +127,7 @@ export const InputModal: React.FC<InputModalProps> = ({ isOpen, onStart }) => {
         
         <div className="p-6 space-y-4">
           <p className="text-stone-600 text-sm">
-            Paste your 16 words below or upload a screenshot of the puzzle.
+            Paste your 16 words below, upload a screenshot, or search for today's puzzle.
           </p>
           
           <div className="relative">
@@ -116,14 +141,14 @@ export const InputModal: React.FC<InputModalProps> = ({ isOpen, onStart }) => {
               {isAnalyzing && (
                 <div className="absolute inset-0 bg-white/60 backdrop-blur-[1px] flex flex-col items-center justify-center rounded-xl">
                   <Loader2 className="animate-spin text-stone-800 mb-2" size={32} />
-                  <span className="text-sm font-semibold text-stone-800">Reading Board...</span>
+                  <span className="text-sm font-semibold text-stone-800">Analyzing...</span>
                 </div>
               )}
           </div>
           
           {error && (
-            <div className="text-red-500 text-sm font-medium bg-red-50 p-3 rounded-lg flex items-center gap-2 animate-in fade-in slide-in-from-top-1">
-                ⚠️ {error}
+            <div className={`text-sm font-medium p-3 rounded-lg flex items-center gap-2 animate-in fade-in slide-in-from-top-1 ${error.includes('Loaded') ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-500'}`}>
+                {error.includes('Loaded') ? '✅' : '⚠️'} {error}
             </div>
           )}
 
@@ -139,16 +164,25 @@ export const InputModal: React.FC<InputModalProps> = ({ isOpen, onStart }) => {
                <button
                 onClick={() => fileInputRef.current?.click()}
                 disabled={isAnalyzing}
-                className="px-4 py-2 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-lg font-medium text-sm transition-colors flex items-center gap-2 border border-stone-200"
+                className="px-3 py-2 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-lg font-medium text-xs transition-colors flex items-center gap-2 border border-stone-200"
                 title="Upload Screenshot"
               >
-                <ImageIcon size={16} />
-                <span className="hidden sm:inline">Upload Image</span>
+                <ImageIcon size={14} />
+                <span className="hidden sm:inline">Image</span>
+              </button>
+               <button
+                onClick={handleLoadDaily}
+                disabled={isAnalyzing}
+                className="px-3 py-2 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-lg font-medium text-xs transition-colors flex items-center gap-2 border border-stone-200"
+                title="Search Web for Today's Puzzle"
+              >
+                <Globe size={14} />
+                <span className="hidden sm:inline">Daily</span>
               </button>
                <button
                 onClick={loadPreset}
                 disabled={isAnalyzing}
-                className="px-4 py-2 text-stone-500 hover:text-stone-800 font-medium text-sm transition-colors flex items-center gap-1"
+                className="px-3 py-2 text-stone-500 hover:text-stone-800 font-medium text-xs transition-colors flex items-center gap-1"
               >
                 <RotateCcw size={14} />
                 <span className="hidden sm:inline">Demo</span>

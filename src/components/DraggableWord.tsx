@@ -1,6 +1,6 @@
 import React, { memo } from 'react';
 import { useDraggable } from '@dnd-kit/core';
-import { WordItem } from '../types';
+import { WordItem } from '../../types';
 
 interface DraggableWordProps {
   word: WordItem;

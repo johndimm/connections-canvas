@@ -1,9 +1,6 @@
 import { GoogleGenAI, Type, Schema } from "@google/genai";
 import { GroupSuggestion } from "../types";
 
-// Helper to get the AI instance safely
-// We do not initialize it immediately at the top level to avoid crashing the app
-// if the API_KEY is missing during the initial load.
 const getAI = () => {
   const key = process.env.API_KEY;
   if (!key) {
@@ -20,9 +17,9 @@ const responseSchema: Schema = {
       items: {
         type: Type.OBJECT,
         properties: {
-          groupName: { type: Type.STRING, description: "The short label for the connection (e.g. 'Types of Trees')" },
-          words: { type: Type.ARRAY, items: { type: Type.STRING }, description: "The 4 words belonging to this group" },
-          reasoning: { type: Type.STRING, description: "Brief explanation of why they connect" },
+          groupName: { type: Type.STRING },
+          words: { type: Type.ARRAY, items: { type: Type.STRING } },
+          reasoning: { type: Type.STRING },
           difficulty: { type: Type.STRING, enum: ["Easy", "Medium", "Hard", "Tricky"] }
         },
         required: ["groupName", "words", "reasoning", "difficulty"]
@@ -32,6 +29,19 @@ const responseSchema: Schema = {
   required: ["groups"]
 };
 
+// Schema for fetching just the words
+const wordsListSchema: Schema = {
+  type: Type.OBJECT,
+  properties: {
+    words: { 
+      type: Type.ARRAY, 
+      items: { type: Type.STRING },
+      description: "The list of exactly 16 words found in the puzzle grid."
+    }
+  },
+  required: ["words"]
+};
+
 export const getConnectionsHints = async (words: string[]): Promise<GroupSuggestion[]> => {
   try {
     const ai = getAI();
@@ -39,8 +49,6 @@ export const getConnectionsHints = async (words: string[]): Promise<GroupSuggest
       Here are 16 words from a 'Connections' style puzzle. 
       Identify the 4 distinct groups of 4 words each. 
       The words are: ${words.join(", ")}.
-      
-      Return the answer in JSON format with 4 groups.
     `;
 
     const response = await ai.models.generateContent({
@@ -49,15 +57,11 @@ export const getConnectionsHints = async (words: string[]): Promise<GroupSuggest
       config: {
         responseMimeType: "application/json",
         responseSchema: responseSchema,
-        systemInstruction: "You are an expert puzzle solver specialized in NYT Connections games. You are accurate and concise.",
-        temperature: 0.1, // Low temperature for deterministic solving
+        temperature: 0.1, 
       }
     });
 
-    const text = response.text;
-    if (!text) return [];
-
-    const data = JSON.parse(text);
+    const data = JSON.parse(response.text || "{}");
     return data.groups || [];
 
   } catch (error) {
@@ -85,23 +89,84 @@ export const extractWordsFromImage = async (base64Data: string, mimeType: string
       },
       config: {
         responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            words: { type: Type.ARRAY, items: { type: Type.STRING } }
-          }
-        }
+        responseSchema: wordsListSchema
       }
     });
-
-    const text = response.text;
-    if (!text) return [];
     
-    const data = JSON.parse(text);
+    const data = JSON.parse(response.text || "{}");
     return data.words || [];
 
   } catch (error) {
     console.error("Failed to extract words from image:", error);
+    throw error;
+  }
+};
+
+export const fetchDailyPuzzle = async (): Promise<{ words: string[], source?: string }> => {
+  try {
+    const ai = getAI();
+    const date = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+    
+    const prompt = `
+      Find the New York Times Connections puzzle for today, ${date}.
+      Return the 16 words from the grid.
+      Output valid JSON in this format: { "words": ["WORD1", "WORD2", ...] }
+      Do not include any other text.
+    `;
+
+    // Note: When using tools (googleSearch), we CANNOT use responseMimeType or responseSchema.
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: prompt,
+      config: {
+        tools: [{ googleSearch: {} }],
+      }
+    });
+
+    const text = response.text || "";
+    let words: string[] = [];
+
+    try {
+        // Attempt to parse JSON directly, cleaning potential markdown code blocks
+        const cleanText = text.replace(/```json\n?|\n?```/g, "").trim();
+        const data = JSON.parse(cleanText);
+        
+        if (data.words && Array.isArray(data.words)) {
+            words = data.words;
+        } else if (Array.isArray(data)) {
+            words = data;
+        }
+    } catch (e) {
+        // Fallback: Try to find a JSON object or array pattern in the text
+        const arrayMatch = text.match(/\[.*\]/s);
+        const objectMatch = text.match(/\{.*\}/s);
+        
+        try {
+            if (objectMatch) {
+                 const data = JSON.parse(objectMatch[0]);
+                 if (data.words) words = data.words;
+            } else if (arrayMatch) {
+                 words = JSON.parse(arrayMatch[0]);
+            }
+        } catch (e2) {}
+    }
+
+    // SANITIZATION
+    words = words.flat();
+    words = words.map(w => String(w).trim().toUpperCase());
+    words = words.filter(w => 
+        w.length > 0 && 
+        w.length < 25 &&
+        !w.includes("THE WORDS") && 
+        !w.includes("PUZZLE") &&
+        !w.includes("HTTP")
+    );
+    const finalWords = [...new Set(words)].slice(0, 16);
+    
+    return { words: finalWords };
+
+  } catch (error) {
+    console.error("Failed to fetch daily puzzle:", error);
     throw error;
   }
 };

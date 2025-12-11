@@ -1,8 +1,8 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { DndContext, DragEndEvent, useSensor, useSensors, PointerSensor } from '@dnd-kit/core';
-import { WordItem } from './types';
+import { WordItem } from '../types';
 import { DraggableWord } from './components/DraggableWord';
-import { fetchDailyPuzzle } from './services/geminiService';
+import { fetchDailyPuzzle } from '../services/geminiService';
 import { Loader2, AlertCircle } from 'lucide-react';
 
 const App: React.FC = () => {

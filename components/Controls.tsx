@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { RefreshCw, Wand2, Grid, Shuffle, CheckCircle, Trash2, Share2, Check } from 'lucide-react';
+import React from 'react';
+import { Wand2, Grid, Shuffle, Check, Plus, Upload } from 'lucide-react';
 
 interface ControlsProps {
   onShuffle: () => void;
@@ -17,79 +17,71 @@ export const Controls: React.FC<ControlsProps> = ({
   onResetPositions, 
   onGetHints,
   onClear,
-  onShare,
   isLoading,
   hasSelection,
   onSubmitSelection
 }) => {
-  const [copied, setCopied] = useState(false);
-
-  const handleShareClick = () => {
-    onShare();
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
 
   return (
-    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-white/90 backdrop-blur-md shadow-2xl rounded-full px-6 py-3 flex items-center gap-4 border border-stone-200 z-50 transition-all">
-      <div className="flex items-center gap-2 pr-4 border-r border-stone-200">
-        <button
-          onClick={onShuffle}
-          className="p-2 text-stone-600 hover:bg-stone-100 rounded-full transition-colors tooltip"
-          title="Shuffle Words"
-        >
-          <Shuffle size={20} />
-        </button>
-        <button
-          onClick={onResetPositions}
-          className="p-2 text-stone-600 hover:bg-stone-100 rounded-full transition-colors"
-          title="Grid View"
-        >
-          <Grid size={20} />
-        </button>
-         <button
-          onClick={onClear}
-          className="p-2 text-red-500 hover:bg-red-50 rounded-full transition-colors"
-          title="Clear Board"
-        >
-          <Trash2 size={20} />
-        </button>
-      </div>
-
-      <div className="flex items-center gap-3">
-         {hasSelection && (
-            <button
+    <div className="fixed bottom-8 left-1/2 -translate-x-1/2 flex gap-3 z-50">
+      
+      {/* Main Action Pill */}
+      <div className="bg-white border border-stone-200 shadow-xl rounded-full p-2 flex items-center gap-2">
+        
+        {hasSelection ? (
+             <button
                 onClick={onSubmitSelection}
-                className="flex items-center gap-2 bg-stone-900 text-white px-4 py-2 rounded-full font-semibold hover:bg-stone-700 transition-all hover:scale-105 active:scale-95 shadow-lg"
+                className="bg-black text-white px-6 py-2 rounded-full font-bold text-sm hover:bg-stone-800 transition-all active:scale-95 animate-in zoom-in"
             >
-                <CheckCircle size={18} />
-                <span>Submit Group</span>
+                Submit
             </button>
-         )}
-
-        {!hasSelection && (
-           <button
-             onClick={handleShareClick}
-             className="p-2 text-stone-600 hover:bg-stone-100 rounded-full transition-colors flex items-center gap-2"
-             title="Share Puzzle Link"
-           >
-             {copied ? <Check size={20} className="text-green-600"/> : <Share2 size={20} />}
-           </button>
+        ) : (
+            <>
+                <button
+                onClick={onShuffle}
+                className="p-3 text-stone-700 hover:bg-stone-100 rounded-full transition-colors border border-transparent hover:border-stone-200"
+                title="Shuffle"
+                >
+                <Shuffle size={20} />
+                </button>
+                <button
+                onClick={onResetPositions}
+                className="p-3 text-stone-700 hover:bg-stone-100 rounded-full transition-colors border border-transparent hover:border-stone-200"
+                title="Deshuffle / Grid"
+                >
+                <Grid size={20} />
+                </button>
+            </>
         )}
+
+        {/* Separator */}
+        <div className="w-px h-6 bg-stone-200 mx-1"></div>
 
         <button
           onClick={onGetHints}
           disabled={isLoading}
-          className={`flex items-center gap-2 px-4 py-2 rounded-full font-semibold transition-all shadow-md ${
+          className={`px-4 py-2 rounded-full font-bold text-sm transition-all border flex items-center gap-2 ${
             isLoading 
-              ? 'bg-purple-100 text-purple-400 cursor-wait' 
-              : 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:shadow-lg hover:scale-105 active:scale-95'
+              ? 'bg-stone-50 text-stone-400 border-stone-200' 
+              : 'bg-white text-stone-700 border-stone-300 hover:bg-stone-50 hover:border-stone-400'
           }`}
         >
-          <Wand2 size={18} className={isLoading ? "animate-spin" : ""} />
-          <span>{isLoading ? 'Thinking...' : 'AI Hint'}</span>
+          <Wand2 size={16} className={isLoading ? "animate-spin" : ""} />
+          <span>{isLoading ? 'Thinking...' : 'Hint'}</span>
         </button>
       </div>
+
+      {/* Secondary Actions (Small) */}
+      <div className="absolute right-[-60px] top-1/2 -translate-y-1/2 flex flex-col gap-2">
+         <button
+          onClick={onClear}
+          className="p-2 bg-white text-stone-400 hover:text-stone-900 rounded-full shadow-md hover:shadow-lg transition-all border border-stone-100"
+          title="Load New Puzzle"
+        >
+          <Plus size={16} />
+        </button>
+      </div>
+
     </div>
   );
 };
