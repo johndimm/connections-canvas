@@ -1,0 +1,5 @@
+{
+  "name": "Connections Canvas",
+  "description": "A visual workspace to solve NYT Connections puzzles. Drag and drop words freely to group them, with AI assistance powered by Gemini.",
+  "requestFramePermissions": []
+}
