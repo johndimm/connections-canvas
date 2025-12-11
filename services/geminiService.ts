@@ -1,7 +1,16 @@
 import { GoogleGenAI, Type, Schema } from "@google/genai";
 import { GroupSuggestion } from "../types";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+// Helper to get the AI instance safely
+// We do not initialize it immediately at the top level to avoid crashing the app
+// if the API_KEY is missing during the initial load.
+const getAI = () => {
+  const key = process.env.API_KEY;
+  if (!key) {
+    throw new Error("API Key is missing. Please add API_KEY to your environment variables.");
+  }
+  return new GoogleGenAI({ apiKey: key });
+};
 
 const responseSchema: Schema = {
   type: Type.OBJECT,
@@ -25,6 +34,7 @@ const responseSchema: Schema = {
 
 export const getConnectionsHints = async (words: string[]): Promise<GroupSuggestion[]> => {
   try {
+    const ai = getAI();
     const prompt = `
       Here are 16 words from a 'Connections' style puzzle. 
       Identify the 4 distinct groups of 4 words each. 
@@ -58,6 +68,7 @@ export const getConnectionsHints = async (words: string[]): Promise<GroupSuggest
 
 export const extractWordsFromImage = async (base64Data: string, mimeType: string): Promise<string[]> => {
   try {
+    const ai = getAI();
     const prompt = `
       Analyze this image of a NYT Connections puzzle board.
       Extract the 16 distinct words visible on the tiles.
