@@ -8,19 +8,21 @@ interface DraggableWordProps {
   onToggleSelect: (id: string) => void;
   width?: number;
   height?: number;
+  scale?: number;
 }
 
-export const DraggableWord: React.FC<DraggableWordProps> = memo(({ word, isSelected, onToggleSelect, width = 150, height = 80 }) => {
+export const DraggableWord: React.FC<DraggableWordProps> = memo(({ word, isSelected, onToggleSelect, width = 150, height = 80, scale = 1 }) => {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: word.id,
     data: { ...word },
     disabled: word.isLocked,
   });
 
+  const x = transform ? (transform.x / scale) : 0;
+  const y = transform ? (transform.y / scale) : 0;
+
   const baseStyle: React.CSSProperties = {
-    transform: transform
-      ? `translate3d(${word.x + transform.x}px, ${word.y + transform.y}px, 0)`
-      : `translate3d(${word.x}px, ${word.y}px, 0)`,
+    transform: `translate3d(${word.x + x}px, ${word.y + y}px, 0)`,
     position: 'absolute',
     touchAction: 'none',
     zIndex: isDragging ? 100 : 1,
@@ -46,7 +48,7 @@ export const DraggableWord: React.FC<DraggableWordProps> = memo(({ word, isSelec
     letterSpacing: '0.01em',
     lineHeight: 1.2,
     
-    cursor: 'pointer',
+    cursor: 'grab',
     userSelect: 'none',
     
     // Critical 3D Shadow effect
@@ -54,7 +56,7 @@ export const DraggableWord: React.FC<DraggableWordProps> = memo(({ word, isSelec
         ? '0 10px 25px rgba(0,0,0,0.2)' 
         : '0 2px 0 rgba(0,0,0,0.1)', 
         
-    transition: 'transform 0.1s, background-color 0.15s, color 0.15s',
+    transition: isDragging ? 'none' : 'transform 0.1s, background-color 0.15s, color 0.15s',
     opacity: isDragging ? 0.95 : 1,
   };
 
