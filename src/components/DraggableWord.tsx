@@ -6,9 +6,11 @@ interface DraggableWordProps {
   word: WordItem;
   isSelected: boolean;
   onToggleSelect: (id: string) => void;
+  width?: number;
+  height?: number;
 }
 
-export const DraggableWord: React.FC<DraggableWordProps> = memo(({ word, isSelected, onToggleSelect }) => {
+export const DraggableWord: React.FC<DraggableWordProps> = memo(({ word, isSelected, onToggleSelect, width = 150, height = 80 }) => {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: word.id,
     data: { ...word },
@@ -23,9 +25,10 @@ export const DraggableWord: React.FC<DraggableWordProps> = memo(({ word, isSelec
     touchAction: 'none',
     zIndex: isDragging ? 100 : 1,
     
-    // NYT Tile Visuals - Using inline styles to override any missing Tailwind
-    width: '150px',
-    height: '80px',
+    // Dynamic dimensions
+    width: `${width}px`,
+    height: `${height}px`,
+    
     backgroundColor: isSelected ? '#5a594e' : '#efefe6',
     color: isSelected ? '#ffffff' : '#000000',
     borderRadius: '8px',
@@ -33,12 +36,12 @@ export const DraggableWord: React.FC<DraggableWordProps> = memo(({ word, isSelec
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: '8px',
+    padding: '4px',
     textAlign: 'center',
     
     fontFamily: '"Libre Franklin", sans-serif',
     fontWeight: 700,
-    fontSize: '14px',
+    fontSize: width < 120 ? '11px' : '14px',
     textTransform: 'uppercase',
     letterSpacing: '0.01em',
     lineHeight: 1.2,
@@ -63,7 +66,7 @@ export const DraggableWord: React.FC<DraggableWordProps> = memo(({ word, isSelec
       {...attributes}
       onClick={() => onToggleSelect(word.id)}
     >
-      <span style={{ pointerEvents: 'none' }}>
+      <span style={{ pointerEvents: 'none', width: '100%', wordBreak: 'break-word' }}>
         {word.text}
       </span>
     </div>
