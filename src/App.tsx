@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { DndContext, DragEndEvent, useSensor, useSensors, PointerSensor } from '@dnd-kit/core';
+import { DndContext, DragEndEvent, useSensor, useSensors, PointerSensor, DragStartEvent } from '@dnd-kit/core';
 import { WordItem } from '../types';
 import { DraggableWord } from './components/DraggableWord';
 import { fetchDailyPuzzle } from '../services/geminiService';
@@ -22,11 +22,12 @@ const App: React.FC = () => {
   const isPanning = useRef(false);
   const lastPanPoint = useRef({ x: 0, y: 0 });
   const lastPinchDist = useRef<number | null>(null);
+  const activeTouches = useRef(0);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 5,
+        distance: 8, 
       },
     })
   );
@@ -34,36 +35,44 @@ const App: React.FC = () => {
   const hasInitialized = useRef(false);
 
   const calculateResponsiveLayout = useCallback((wordList: string[]) => {
-    const width = window.innerWidth;
-    const isMobile = width < 640;
-    
     const cols = 4;
     const gap = 16;
     const tileW = 150;
     const tileH = 80;
     
+    // World dimensions
     const totalW = (cols * tileW) + ((cols - 1) * gap);
-    const startX = (width - totalW) / 2; 
-    const startY = isMobile ? 180 : 200;
 
-    if (isMobile) {
-        const requiredScale = (width - 40) / totalW;
-        setViewport(prev => ({ ...prev, scale: Math.max(0.4, Math.min(1, requiredScale)), x: 0, y: 0 }));
+    const screenW = window.innerWidth;
+    const hPadding = 40;
+    
+    let scale = 1;
+    if (screenW < totalW + hPadding) {
+        scale = (screenW - hPadding) / totalW;
     }
+    scale = Math.max(0.4, Math.min(1.2, scale));
+
+    const gridScreenW = totalW * scale;
+    const startViewportX = (screenW - gridScreenW) / 2;
+    // Push it down a bit more to account for the header in world space
+    const startViewportY = screenW < 640 ? 160 : 200;
 
     setLayoutConfig({ tileW, tileH });
 
-    return wordList.map((text, i) => ({
+    const newWords = wordList.map((text, i) => ({
       id: `word-${i}-${Date.now()}`,
       text,
-      x: startX + (i % cols) * (tileW + gap),
-      y: startY + Math.floor(i / cols) * (tileH + gap),
+      x: (i % cols) * (tileW + gap),
+      y: Math.floor(i / cols) * (tileH + gap),
     }));
+
+    return { words: newWords, viewport: { x: startViewportX, y: startViewportY, scale } };
   }, []);
 
   const initializeBoard = useCallback((newWordList: string[]) => {
-    const layout = calculateResponsiveLayout(newWordList);
-    setWords(layout);
+    const { words: newWords, viewport: newViewport } = calculateResponsiveLayout(newWordList);
+    setWords(newWords);
+    setViewport(newViewport);
     setIsInitializing(false);
     hasInitialized.current = true;
   }, [calculateResponsiveLayout]);
@@ -113,10 +122,17 @@ const App: React.FC = () => {
   const handlePointerUp = (e: React.PointerEvent) => {
     isPanning.current = false;
     lastPinchDist.current = null;
-    (e.target as HTMLElement).releasePointerCapture(e.pointerId);
+    if (e.target instanceof HTMLElement && e.target.hasPointerCapture(e.pointerId)) {
+        e.target.releasePointerCapture(e.pointerId);
+    }
+  };
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+      activeTouches.current = e.touches.length;
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
+     activeTouches.current = e.touches.length;
      if (e.touches.length === 2) {
         const t1 = e.touches[0];
         const t2 = e.touches[1];
@@ -132,8 +148,11 @@ const App: React.FC = () => {
      }
   };
 
-  const handleTouchEnd = () => {
-      lastPinchDist.current = null;
+  const handleTouchEnd = (e: React.TouchEvent) => {
+      activeTouches.current = e.touches.length;
+      if (e.touches.length < 2) {
+          lastPinchDist.current = null;
+      }
   };
   
   const zoomIn = () => setViewport(prev => ({ ...prev, scale: Math.min(3, prev.scale + 0.1) }));
@@ -151,6 +170,14 @@ const App: React.FC = () => {
     );
   };
 
+  const handleDragCancel = () => {
+      // Logic handled by dnd-kit internal state reset
+  };
+  
+  const cancelDrop = () => {
+      return activeTouches.current > 1;
+  };
+
   const handleToggleSelect = (id: string) => {
     setSelectedIds((prev) => {
       const next = new Set(prev);
@@ -162,13 +189,9 @@ const App: React.FC = () => {
 
   const handleResetLayout = () => {
       const currentWordTexts = words.map(w => w.text);
-      const newLayout = calculateResponsiveLayout(currentWordTexts);
-      setWords(newLayout);
-      const width = window.innerWidth;
-      const isMobile = width < 640;
-      if (!isMobile) {
-          setViewport(prev => ({ ...prev, x: 0, y: 0, scale: 1 }));
-      }
+      const { words: newWords, viewport: newViewport } = calculateResponsiveLayout(currentWordTexts);
+      setWords(newWords);
+      setViewport(newViewport);
   };
 
   const dateStr = new Date().toLocaleDateString('en-US', {
@@ -176,6 +199,9 @@ const App: React.FC = () => {
     month: 'short', 
     day: 'numeric'
   });
+
+  // Calculate width for centering the title in World Space
+  const totalGridWidth = (4 * layoutConfig.tileW) + (3 * 16);
 
   if (isInitializing) {
     return (
@@ -195,6 +221,7 @@ const App: React.FC = () => {
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
         onPointerLeave={handlePointerUp}
+        onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
         onWheel={(e) => {
@@ -214,30 +241,37 @@ const App: React.FC = () => {
          }}
        />
 
-      <div className="absolute top-0 w-full pt-4 pb-4 md:pt-8 md:pb-6 border-b border-stone-300 bg-[#f8f7f4]/95 backdrop-blur z-20 flex flex-col items-center justify-center shadow-sm px-4 pointer-events-auto">
-         <div className="flex items-center gap-2">
-            <h1 className="text-lg md:text-3xl font-extrabold text-stone-900 tracking-tight text-center">
-                Connections — {dateStr}
-            </h1>
-         </div>
-         <p className="text-stone-600 text-[10px] md:text-sm font-medium text-center max-w-md leading-relaxed mt-1">
-           Pan/Zoom to explore • Drag to group
-         </p>
-         
-         <div className="absolute right-4 top-1/2 -translate-y-1/2 flex gap-2">
-             <button onClick={handleResetLayout} className="p-2 bg-stone-100 hover:bg-stone-200 rounded-full text-stone-600" title="Reset Layout">
-                <RefreshCw size={16} />
-             </button>
-         </div>
-      </div>
-
+      {/* World Viewport */}
       <div 
         className="absolute inset-0 origin-top-left will-change-transform"
         style={{ 
             transform: `translate(${viewport.x}px, ${viewport.y}px) scale(${viewport.scale})`
         }}
       >
-          <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+          {/* World Header - Moves with the world */}
+          <div 
+             className="absolute flex flex-col items-center justify-end pb-8 pointer-events-none"
+             style={{
+                 left: 0,
+                 top: -150,
+                 width: totalGridWidth,
+                 height: 150,
+             }}
+          >
+             <h1 className="text-3xl md:text-4xl font-extrabold text-stone-900 tracking-tight text-center whitespace-nowrap drop-shadow-sm">
+                Connections — {dateStr}
+             </h1>
+             <p className="text-stone-500 text-sm font-medium mt-2 text-center">
+               Pan/Zoom to explore • Drag to group
+             </p>
+          </div>
+
+          <DndContext 
+            sensors={sensors} 
+            onDragEnd={handleDragEnd}
+            onDragCancel={handleDragCancel}
+            cancelDrop={cancelDrop}
+          >
             {words.map((word) => (
               <div key={word.id} data-draggable="true" className="absolute" style={{ left: 0, top: 0 }}> 
                   <DraggableWord
@@ -253,7 +287,16 @@ const App: React.FC = () => {
           </DndContext>
       </div>
       
+      {/* Floating Controls */}
       <div className="absolute bottom-6 right-6 flex flex-col gap-2 z-20 pointer-events-auto">
+          <button 
+             onClick={handleResetLayout} 
+             className="p-3 bg-white shadow-lg rounded-full text-stone-700 hover:bg-stone-50 active:scale-95 border border-stone-200 mb-2"
+             title="Reset Layout"
+          >
+             <RefreshCw size={24} />
+          </button>
+
           <button onClick={zoomIn} className="p-3 bg-white shadow-lg rounded-full text-stone-700 hover:bg-stone-50 active:scale-95 border border-stone-200">
               <ZoomIn size={24} />
           </button>
