@@ -250,7 +250,7 @@ const App: React.FC = () => {
       >
           {/* World Header - Moves with the world */}
           <div 
-             className="absolute flex flex-col items-center justify-end pb-8 pointer-events-none"
+             className="absolute flex flex-col items-center justify-end pb-4 pointer-events-none"
              style={{
                  left: 0,
                  top: -150,
@@ -258,10 +258,10 @@ const App: React.FC = () => {
                  height: 150,
              }}
           >
-             <h1 className="text-3xl md:text-4xl font-extrabold text-stone-900 tracking-tight text-center whitespace-nowrap drop-shadow-sm">
-                Connections — {dateStr}
+             <h1 className="text-2xl md:text-3xl font-extrabold text-stone-900 tracking-tight text-center whitespace-nowrap drop-shadow-sm">
+                Connections Scratchpad — {dateStr}
              </h1>
-             <p className="text-stone-500 text-sm font-medium mt-2 text-center">
+             <p className="text-stone-500 text-base font-medium mt-1 text-center">
                Pan/Zoom to explore • Drag to group
              </p>
           </div>

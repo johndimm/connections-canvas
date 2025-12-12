@@ -22,6 +22,24 @@ export const DraggableWord: React.FC<DraggableWordProps> = memo(({ word, isSelec
   const x = transform ? (transform.x / scale) : 0;
   const y = transform ? (transform.y / scale) : 0;
 
+  // Dynamic font scaling to ensure text fits
+  const getFontSize = () => {
+    const len = word.text.length;
+    const isSmall = width < 120;
+    
+    if (isSmall) {
+        if (len >= 12) return '10px';
+        if (len >= 9) return '12px';
+        if (len >= 6) return '13px';
+        return '15px';
+    } else {
+        if (len >= 12) return '13px'; // e.g. "CONSTRUCTION"
+        if (len >= 9) return '16px';  // e.g. "BUILDING"
+        if (len >= 6) return '18px';  // e.g. "PLANES"
+        return '20px';               // e.g. "CATS"
+    }
+  };
+
   const baseStyle: React.CSSProperties = {
     transform: `translate3d(${word.x + x}px, ${word.y + y}px, 0)`,
     position: 'absolute',
@@ -44,10 +62,10 @@ export const DraggableWord: React.FC<DraggableWordProps> = memo(({ word, isSelec
     
     fontFamily: '"Libre Franklin", sans-serif',
     fontWeight: 700,
-    fontSize: width < 120 ? '11px' : '14px',
+    fontSize: getFontSize(),
     textTransform: 'uppercase',
     letterSpacing: '0.01em',
-    lineHeight: 1.2,
+    lineHeight: 1.1,
     
     cursor: 'grab',
     userSelect: 'none',
