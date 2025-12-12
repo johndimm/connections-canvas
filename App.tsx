@@ -5,6 +5,16 @@ import { DraggableWord } from './components/DraggableWord';
 import { fetchDailyPuzzle } from './services/geminiService';
 import { Loader2, AlertCircle, RefreshCw, ZoomIn, ZoomOut, Move } from 'lucide-react';
 
+// Fisher-Yates shuffle to randomize word order
+const shuffle = <T,>(array: T[]): T[] => {
+  const newArray = [...array];
+  for (let i = newArray.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+  }
+  return newArray;
+};
+
 const App: React.FC = () => {
   const [words, setWords] = useState<WordItem[]>([]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -70,7 +80,9 @@ const App: React.FC = () => {
   }, []);
 
   const initializeBoard = useCallback((newWordList: string[]) => {
-    const { words: newWords, viewport: newViewport } = calculateResponsiveLayout(newWordList);
+    // Shuffle the words so they don't appear in solved groups (if API returns them that way)
+    const shuffledWords = shuffle(newWordList);
+    const { words: newWords, viewport: newViewport } = calculateResponsiveLayout(shuffledWords);
     setWords(newWords);
     setViewport(newViewport);
     setIsInitializing(false);
