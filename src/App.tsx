@@ -274,7 +274,15 @@ const App: React.FC = () => {
                 Connections Scratchpad — {dateStr}
              </h1>
              <p className="text-stone-500 text-base font-medium mt-1 text-center">
-               Pan/Zoom to explore • Drag to group
+               Drag tiles to try out various groupings before{' '}
+               <a 
+                 href="https://www.nytimes.com/games/connections" 
+                 target="_blank" 
+                 rel="noopener noreferrer"
+                 className="underline hover:text-stone-800 pointer-events-auto transition-colors"
+               >
+                 playing the actual NYT game
+               </a>
              </p>
           </div>
 
