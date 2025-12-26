@@ -18,26 +18,20 @@ export const DraggableWord: React.FC<DraggableWordProps> = memo(({ word, isSelec
     disabled: word.isLocked,
   });
 
-  // Adjust transform for scale so the item follows the cursor exactly
   const x = transform ? (transform.x / scale) : 0;
   const y = transform ? (transform.y / scale) : 0;
 
-  // Dynamic font scaling to ensure text fits
   const getFontSize = () => {
     const len = word.text.length;
-    const isSmall = width < 120;
-    
-    if (isSmall) {
-        if (len >= 12) return '10px';
-        if (len >= 9) return '12px';
-        if (len >= 6) return '13px';
-        return '15px';
-    } else {
-        if (len >= 12) return '13px'; // e.g. "CONSTRUCTION"
-        if (len >= 9) return '16px';  // e.g. "BUILDING"
-        if (len >= 6) return '18px';  // e.g. "PLANES"
-        return '20px';               // e.g. "CATS"
-    }
+    const baseWidth = 150;
+    const ratio = width / baseWidth;
+
+    if (len <= 4) return `${Math.floor(28 * ratio)}px`;
+    if (len <= 6) return `${Math.floor(24 * ratio)}px`;
+    if (len <= 8) return `${Math.floor(21 * ratio)}px`;
+    if (len <= 10) return `${Math.floor(18 * ratio)}px`;
+    if (len <= 12) return `${Math.floor(15 * ratio)}px`;
+    return `${Math.floor(13 * ratio)}px`;
   };
 
   const baseStyle: React.CSSProperties = {
@@ -46,37 +40,35 @@ export const DraggableWord: React.FC<DraggableWordProps> = memo(({ word, isSelec
     touchAction: 'none',
     zIndex: isDragging ? 100 : 1,
     
-    // Dynamic dimensions
     width: `${width}px`,
     height: `${height}px`,
     
     backgroundColor: isSelected ? '#5a594e' : '#efefe6',
     color: isSelected ? '#ffffff' : '#000000',
-    borderRadius: '8px',
+    borderRadius: '6px',
     
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: '4px',
+    padding: '8px',
     textAlign: 'center',
     
     fontFamily: '"Libre Franklin", sans-serif',
-    fontWeight: 700,
+    fontWeight: 800,
     fontSize: getFontSize(),
     textTransform: 'uppercase',
-    letterSpacing: '0.01em',
-    lineHeight: 1.1,
+    letterSpacing: '0.02em',
+    lineHeight: 1,
     
     cursor: 'grab',
     userSelect: 'none',
     
-    // Critical 3D Shadow effect
     boxShadow: isDragging 
-        ? '0 10px 25px rgba(0,0,0,0.2)' 
-        : '0 2px 0 rgba(0,0,0,0.1)', 
+        ? '0 12px 30px rgba(0,0,0,0.15)' 
+        : '0 1px 2px rgba(0,0,0,0.05)',
         
-    transition: isDragging ? 'none' : 'transform 0.1s, background-color 0.15s, color 0.15s',
-    opacity: isDragging ? 0.95 : 1,
+    transition: isDragging ? 'none' : 'transform 0.1s, background-color 0.1s, color 0.1s',
+    opacity: isDragging ? 0.9 : 1,
   };
 
   return (
@@ -87,7 +79,12 @@ export const DraggableWord: React.FC<DraggableWordProps> = memo(({ word, isSelec
       {...attributes}
       onClick={() => onToggleSelect(word.id)}
     >
-      <span style={{ pointerEvents: 'none', width: '100%', wordBreak: 'break-word' }}>
+      <span style={{ 
+        pointerEvents: 'none', 
+        width: '100%', 
+        wordBreak: 'break-word',
+        display: 'block'
+      }}>
         {word.text}
       </span>
     </div>
