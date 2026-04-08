@@ -102,71 +102,15 @@ export const extractWordsFromImage = async (base64Data: string, mimeType: string
   }
 };
 
-export const fetchDailyPuzzle = async (): Promise<{ words: string[], source?: string }> => {
-  try {
-    const ai = getAI();
-    const date = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
-    
-    const prompt = `
-      Find the New York Times Connections puzzle for today, ${date}.
-      Return the 16 words from the grid.
-      Output valid JSON in this format: { "words": ["WORD1", "WORD2", ...] }
-      Do not include any other text.
-    `;
-
-    // Note: When using tools (googleSearch), we CANNOT use responseMimeType or responseSchema.
-    const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
-      contents: prompt,
-      config: {
-        tools: [{ googleSearch: {} }],
-      }
-    });
-
-    const text = response.text || "";
-    let words: string[] = [];
-
-    try {
-        // Attempt to parse JSON directly, cleaning potential markdown code blocks
-        const cleanText = text.replace(/```json\n?|\n?```/g, "").trim();
-        const data = JSON.parse(cleanText);
-        
-        if (data.words && Array.isArray(data.words)) {
-            words = data.words;
-        } else if (Array.isArray(data)) {
-            words = data;
-        }
-    } catch (e) {
-        // Fallback: Try to find a JSON object or array pattern in the text
-        const arrayMatch = text.match(/\[.*\]/s);
-        const objectMatch = text.match(/\{.*\}/s);
-        
-        try {
-            if (objectMatch) {
-                 const data = JSON.parse(objectMatch[0]);
-                 if (data.words) words = data.words;
-            } else if (arrayMatch) {
-                 words = JSON.parse(arrayMatch[0]);
-            }
-        } catch (e2) {}
-    }
-
-    // SANITIZATION
-    words = words.flat();
-    words = words.map(w => String(w).trim().toUpperCase());
-    words = words.filter(w => 
-        w.length > 0 && 
-        w.length < 25 &&
-        !w.includes("THE WORDS") && 
-        !w.includes("PUZZLE") &&
-        !w.includes("HTTP")
-    );
-    const finalWords = [...new Set(words)].slice(0, 16);
-    
-    return { words: finalWords };
-
-  } catch (error) {
-    console.error("Failed to fetch daily puzzle:", error);
-    throw error;
+export const fetchDailyPuzzle = async (): Promise<{ words: string[] }> => {
+  const date = new Date().toISOString().slice(0, 10);
+  const response = await fetch(`/api/nyt/svc/connections/v2/${date}.json`);
+  if (!response.ok) {
+    throw new Error(`NYT API returned ${response.status}`);
   }
+  const data = await response.json();
+  const words: string[] = data.categories.flatMap(
+    (cat: { cards: { content: string }[] }) => cat.cards.map(card => card.content)
+  );
+  return { words };
 };

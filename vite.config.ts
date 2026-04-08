@@ -8,6 +8,15 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, '.', '');
   return {
     plugins: [react()],
+    server: {
+      proxy: {
+        '/api/nyt': {
+          target: 'https://www.nytimes.com',
+          changeOrigin: true,
+          rewrite: (path) => path.replace(/^\/api\/nyt/, ''),
+        },
+      },
+    },
     define: {
       // This ensures process.env.API_KEY in your code is replaced with the actual key value during build
       'process.env.API_KEY': JSON.stringify(env.API_KEY),

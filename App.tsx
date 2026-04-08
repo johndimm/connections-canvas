@@ -94,16 +94,10 @@ const App: React.FC = () => {
       if (hasInitialized.current) return;
       try {
         const { words } = await fetchDailyPuzzle();
-        if (words && words.length > 0) {
-           const safeWords = words.slice(0, 16);
-           initializeBoard(safeWords);
-        } else {
-           setErrorMsg("Could not load puzzle data.");
-           setIsInitializing(false);
-        }
+        initializeBoard(words.slice(0, 16));
       } catch (err) {
         console.error("Init error:", err);
-        setErrorMsg("Failed to connect to puzzle service.");
+        setErrorMsg("Could not load today's puzzle. Please try again later.");
         setIsInitializing(false);
       }
     };
@@ -224,6 +218,15 @@ const App: React.FC = () => {
     );
   }
 
+  if (errorMsg) {
+    return (
+      <div className="min-h-screen bg-[#f8f7f4] flex flex-col items-center justify-center p-4 gap-4">
+        <AlertCircle className="text-red-500" size={40} />
+        <p className="text-stone-700 font-sans font-semibold">{errorMsg}</p>
+      </div>
+    );
+  }
+
   return (
     <div 
         ref={containerRef}
@@ -309,8 +312,8 @@ const App: React.FC = () => {
       
       {/* Floating Controls */}
       <div className="absolute bottom-6 right-6 flex flex-col gap-2 z-20 pointer-events-auto">
-          <button 
-             onClick={handleResetLayout} 
+          <button
+             onClick={handleResetLayout}
              className="p-3 bg-white shadow-lg rounded-full text-stone-700 hover:bg-stone-50 active:scale-95 border border-stone-200 mb-2"
              title="Reset Layout"
           >
@@ -328,12 +331,6 @@ const App: React.FC = () => {
           </div>
       </div>
 
-      {errorMsg && (
-          <div className="absolute top-40 left-1/2 -translate-x-1/2 z-50 text-red-700 bg-red-50 px-6 py-4 rounded-xl flex items-center gap-3 border border-red-200 shadow-lg max-w-md w-full pointer-events-auto">
-              <AlertCircle size={24} className="shrink-0" />
-              <span className="text-sm font-semibold">{errorMsg}</span>
-          </div>
-      )}
 
     </div>
   );
