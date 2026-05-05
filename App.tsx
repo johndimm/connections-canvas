@@ -20,6 +20,7 @@ const App: React.FC = () => {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isInitializing, setIsInitializing] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [puzzleDate, setPuzzleDate] = useState<string | null>(null);
   
   // Viewport State for Infinite Canvas
   const [viewport, setViewport] = useState({ x: 0, y: 0, scale: 1 });
@@ -93,7 +94,8 @@ const App: React.FC = () => {
     const initApp = async () => {
       if (hasInitialized.current) return;
       try {
-        const { words } = await fetchDailyPuzzle();
+        const { words, puzzleDate: date } = await fetchDailyPuzzle();
+        setPuzzleDate(date);
         initializeBoard(words.slice(0, 16));
       } catch (err) {
         console.error("Init error:", err);
@@ -202,7 +204,7 @@ const App: React.FC = () => {
 
   const dateStr = new Date().toLocaleDateString('en-US', {
     weekday: 'short',
-    month: 'short', 
+    month: 'short',
     day: 'numeric'
   });
 
@@ -278,9 +280,9 @@ const App: React.FC = () => {
              </h1>
              <p className="text-stone-500 text-base font-medium mt-1 text-center">
                Drag tiles to try out various groupings before{' '}
-               <a 
-                 href="https://www.nytimes.com/games/connections" 
-                 target="_blank" 
+               <a
+                 href="https://www.nytimes.com/games/connections"
+                 target="_blank"
                  rel="noopener noreferrer"
                  className="underline hover:text-stone-800 pointer-events-auto transition-colors"
                >

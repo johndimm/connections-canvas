@@ -102,15 +102,24 @@ export const extractWordsFromImage = async (base64Data: string, mimeType: string
   }
 };
 
-export const fetchDailyPuzzle = async (): Promise<{ words: string[] }> => {
-  const date = new Date().toISOString().slice(0, 10);
+const fetchPuzzleForDate = async (date: string) => {
   const response = await fetch(`/api/nyt/svc/connections/v2/${date}.json`);
-  if (!response.ok) {
-    throw new Error(`NYT API returned ${response.status}`);
-  }
-  const data = await response.json();
+  if (!response.ok) throw new Error(`NYT API returned ${response.status}`);
+  return response.json();
+};
+
+export const fetchDailyPuzzle = async (): Promise<{ words: string[], puzzleDate: string }> => {
+  const now = new Date();
+  // Use local date to avoid requesting "tomorrow's" puzzle for West Coast users in the evening
+  const puzzleDate = [
+    now.getFullYear(),
+    String(now.getMonth() + 1).padStart(2, '0'),
+    String(now.getDate()).padStart(2, '0'),
+  ].join('-');
+
+  const data = await fetchPuzzleForDate(puzzleDate);
   const words: string[] = data.categories.flatMap(
     (cat: { cards: { content: string }[] }) => cat.cards.map(card => card.content)
   );
-  return { words };
+  return { words, puzzleDate };
 };

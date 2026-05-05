@@ -53,15 +53,13 @@ export const InputModal: React.FC<InputModalProps> = ({ isOpen, onStart }) => {
       setIsAnalyzing(true);
       setError('');
       try {
-          const { words, source } = await fetchDailyPuzzle();
+          const { words } = await fetchDailyPuzzle();
           if (words.length > 0) {
               setText(words.join("\n"));
               if (words.length === 16) {
-                  // If we are confident, just start
-                  // onStart(words); // Optional: Uncomment to auto-start if perfect
-                  setError(`Loaded today's words${source ? ` from ${source}` : ''}. Click Start!`);
+                  setError(`Loaded today's words. Click Start!`);
               } else {
-                  setError(`Found ${words.length} words${source ? ` from ${source}` : ''}. Please check and fix.`);
+                  setError(`Found ${words.length} words. Please check and fix.`);
               }
           } else {
               setError("Could not find today's puzzle. Try uploading a screenshot instead.");

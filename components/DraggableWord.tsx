@@ -22,16 +22,16 @@ export const DraggableWord: React.FC<DraggableWordProps> = memo(({ word, isSelec
   const y = transform ? (transform.y / scale) : 0;
 
   const getFontSize = () => {
-    const len = word.text.length;
-    const baseWidth = 150;
-    const ratio = width / baseWidth;
+    // Use longest word length so no single word ever overflows and triggers mid-word breaks
+    const maxWordLen = Math.max(...word.text.split(' ').map(w => w.length));
+    const ratio = width / 150;
 
-    if (len <= 4) return `${Math.floor(28 * ratio)}px`;
-    if (len <= 6) return `${Math.floor(24 * ratio)}px`;
-    if (len <= 8) return `${Math.floor(21 * ratio)}px`;
-    if (len <= 10) return `${Math.floor(18 * ratio)}px`;
-    if (len <= 12) return `${Math.floor(15 * ratio)}px`;
-    return `${Math.floor(13 * ratio)}px`;
+    if (maxWordLen <= 4) return `${Math.floor(28 * ratio)}px`;
+    if (maxWordLen <= 6) return `${Math.floor(24 * ratio)}px`;
+    if (maxWordLen <= 8) return `${Math.floor(21 * ratio)}px`;
+    if (maxWordLen <= 10) return `${Math.floor(16 * ratio)}px`;
+    if (maxWordLen <= 12) return `${Math.floor(13 * ratio)}px`;
+    return `${Math.floor(11 * ratio)}px`;
   };
 
   const baseStyle: React.CSSProperties = {
@@ -79,10 +79,10 @@ export const DraggableWord: React.FC<DraggableWordProps> = memo(({ word, isSelec
       {...attributes}
       onClick={() => onToggleSelect(word.id)}
     >
-      <span style={{ 
-        pointerEvents: 'none', 
-        width: '100%', 
-        wordBreak: 'break-word',
+      <span style={{
+        pointerEvents: 'none',
+        width: '100%',
+        overflowWrap: 'normal',
         display: 'block'
       }}>
         {word.text}
