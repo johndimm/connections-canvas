@@ -5,15 +5,7 @@ import { DraggableWord } from './components/DraggableWord';
 import { fetchDailyPuzzle } from './services/geminiService';
 import { Loader2, AlertCircle, RefreshCw, ZoomIn, ZoomOut, Move } from 'lucide-react';
 
-// Fisher-Yates shuffle to randomize word order
-const shuffle = <T,>(array: T[]): T[] => {
-  const newArray = [...array];
-  for (let i = newArray.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
-  }
-  return newArray;
-};
+
 
 const App: React.FC = () => {
   const [words, setWords] = useState<WordItem[]>([]);
@@ -21,6 +13,7 @@ const App: React.FC = () => {
   const [isInitializing, setIsInitializing] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [puzzleDate, setPuzzleDate] = useState<string | null>(null);
+  const [switchError, setSwitchError] = useState<string | null>(null);
   
   // Viewport State for Infinite Canvas
   const [viewport, setViewport] = useState({ x: 0, y: 0, scale: 1 });
@@ -81,30 +74,34 @@ const App: React.FC = () => {
   }, []);
 
   const initializeBoard = useCallback((newWordList: string[]) => {
-    // Shuffle the words so they don't appear in solved groups (if API returns them that way)
-    const shuffledWords = shuffle(newWordList);
-    const { words: newWords, viewport: newViewport } = calculateResponsiveLayout(shuffledWords);
+    const { words: newWords, viewport: newViewport } = calculateResponsiveLayout(newWordList);
     setWords(newWords);
     setViewport(newViewport);
     setIsInitializing(false);
     hasInitialized.current = true;
   }, [calculateResponsiveLayout]);
 
-  useEffect(() => {
-    const initApp = async () => {
-      if (hasInitialized.current) return;
-      try {
-        const { words, puzzleDate: date } = await fetchDailyPuzzle();
-        setPuzzleDate(date);
-        initializeBoard(words.slice(0, 16));
-      } catch (err) {
-        console.error("Init error:", err);
+  const loadPuzzle = useCallback(async (dayOffset: number, isInitial = false) => {
+    setSwitchError(null);
+    try {
+      const { words, puzzleDate: date } = await fetchDailyPuzzle(dayOffset);
+      setPuzzleDate(date);
+      initializeBoard(words.slice(0, 16));
+    } catch (err) {
+      console.error("Load puzzle error:", err);
+      if (isInitial) {
         setErrorMsg("Could not load today's puzzle. Please try again later.");
         setIsInitializing(false);
+      } else {
+        setSwitchError("Not available yet — check back after 9 PM PT.");
       }
-    };
-    initApp();
+    }
   }, [initializeBoard]);
+
+  useEffect(() => {
+    if (hasInitialized.current) return;
+    loadPuzzle(0, true);
+  }, [loadPuzzle]);
 
   const handlePointerDown = (e: React.PointerEvent) => {
     if ((e.target as HTMLElement).closest('[data-draggable="true"]')) {
@@ -202,11 +199,18 @@ const App: React.FC = () => {
       setViewport(newViewport);
   };
 
-  const dateStr = new Date().toLocaleDateString('en-US', {
-    weekday: 'short',
-    month: 'short',
-    day: 'numeric'
-  });
+  const todayLocalStr = (() => {
+    const d = new Date();
+    return [d.getFullYear(), String(d.getMonth()+1).padStart(2,'0'), String(d.getDate()).padStart(2,'0')].join('-');
+  })();
+  const isTomorrow = puzzleDate != null && puzzleDate > todayLocalStr;
+  // Tomorrow's puzzle releases at midnight ET — show the link once ET date has advanced past local date
+  const etDateStr = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
+  const showTomorrowLink = isTomorrow || etDateStr > todayLocalStr;
+
+  const dateStr = puzzleDate
+    ? new Date(puzzleDate + 'T12:00:00Z').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+    : new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
 
   // Calculate width for centering the title in World Space
   const totalGridWidth = (4 * layoutConfig.tileW) + (3 * 16);
@@ -288,6 +292,20 @@ const App: React.FC = () => {
                >
                  playing the actual NYT game
                </a>
+               {showTomorrowLink && (
+                 <>
+                   {' · '}
+                   <button
+                     className="underline hover:text-stone-800 pointer-events-auto transition-colors bg-transparent border-0 p-0 font-medium text-base cursor-pointer"
+                     onClick={() => loadPuzzle(isTomorrow ? 0 : 1)}
+                   >
+                     {isTomorrow ? "← today's puzzle" : "tomorrow's puzzle →"}
+                   </button>
+                 </>
+               )}
+               {switchError && (
+                 <span className="block text-amber-600 text-sm mt-1">{switchError}</span>
+               )}
              </p>
           </div>
 

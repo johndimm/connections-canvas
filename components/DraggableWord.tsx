@@ -23,7 +23,7 @@ export const DraggableWord: React.FC<DraggableWordProps> = memo(({ word, isSelec
 
   const getFontSize = () => {
     // Use longest word length so no single word ever overflows and triggers mid-word breaks
-    const maxWordLen = Math.max(...word.text.split(' ').map(w => w.length));
+    const maxWordLen = Math.max(...(word.text ?? '').split(' ').map(w => w.length || 1));
     const ratio = width / 150;
 
     if (maxWordLen <= 4) return `${Math.floor(28 * ratio)}px`;
