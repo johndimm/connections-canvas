@@ -50,7 +50,7 @@ export const DraggableWord: React.FC<DraggableWordProps> = memo(({ word, isSelec
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: '8px',
+    padding: word.imageUrl ? '0' : '8px',
     textAlign: 'center',
     
     fontFamily: '"Libre Franklin", sans-serif',
@@ -79,14 +79,24 @@ export const DraggableWord: React.FC<DraggableWordProps> = memo(({ word, isSelec
       {...attributes}
       onClick={() => onToggleSelect(word.id)}
     >
-      <span style={{
-        pointerEvents: 'none',
-        width: '100%',
-        overflowWrap: 'normal',
-        display: 'block'
-      }}>
-        {word.text}
-      </span>
+      {word.imageUrl ? (
+        <img
+          src={word.imageUrl}
+          alt={word.text}
+          style={{
+            pointerEvents: 'none',
+            width: '100%',
+            height: '100%',
+            objectFit: 'contain',
+            borderRadius: '6px',
+            filter: isSelected ? 'invert(1)' : 'invert(0)',
+          }}
+        />
+      ) : (
+        <span style={{ pointerEvents: 'none', width: '100%', overflowWrap: 'normal', display: 'block' }}>
+          {word.text}
+        </span>
+      )}
     </div>
   );
 });

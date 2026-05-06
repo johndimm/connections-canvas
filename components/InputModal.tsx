@@ -53,7 +53,8 @@ export const InputModal: React.FC<InputModalProps> = ({ isOpen, onStart }) => {
       setIsAnalyzing(true);
       setError('');
       try {
-          const { words } = await fetchDailyPuzzle();
+          const { cards } = await fetchDailyPuzzle();
+          const words = cards.map(c => c.text).filter(Boolean);
           if (words.length > 0) {
               setText(words.join("\n"));
               if (words.length === 16) {

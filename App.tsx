@@ -38,7 +38,7 @@ const App: React.FC = () => {
 
   const hasInitialized = useRef(false);
 
-  const calculateResponsiveLayout = useCallback((wordList: string[]) => {
+  const calculateResponsiveLayout = useCallback((wordList: { text: string; imageUrl?: string }[]) => {
     const cols = 4;
     const gap = 16;
     const tileW = 150;
@@ -63,9 +63,10 @@ const App: React.FC = () => {
 
     setLayoutConfig({ tileW, tileH });
 
-    const newWords = wordList.map((text, i) => ({
+    const newWords = wordList.map((card, i) => ({
       id: `word-${i}-${Date.now()}`,
-      text,
+      text: card.text,
+      imageUrl: card.imageUrl,
       x: (i % cols) * (tileW + gap),
       y: Math.floor(i / cols) * (tileH + gap),
     }));
@@ -73,7 +74,7 @@ const App: React.FC = () => {
     return { words: newWords, viewport: { x: startViewportX, y: startViewportY, scale } };
   }, []);
 
-  const initializeBoard = useCallback((newWordList: string[]) => {
+  const initializeBoard = useCallback((newWordList: { text: string; imageUrl?: string }[]) => {
     const { words: newWords, viewport: newViewport } = calculateResponsiveLayout(newWordList);
     setWords(newWords);
     setViewport(newViewport);
@@ -84,9 +85,9 @@ const App: React.FC = () => {
   const loadPuzzle = useCallback(async (dayOffset: number, isInitial = false) => {
     setSwitchError(null);
     try {
-      const { words, puzzleDate: date } = await fetchDailyPuzzle(dayOffset);
+      const { cards, puzzleDate: date } = await fetchDailyPuzzle(dayOffset);
       setPuzzleDate(date);
-      initializeBoard(words.slice(0, 16));
+      initializeBoard(cards.slice(0, 16));
     } catch (err) {
       console.error("Load puzzle error:", err);
       if (isInitial) {
@@ -193,8 +194,8 @@ const App: React.FC = () => {
   };
 
   const handleResetLayout = () => {
-      const currentWordTexts = words.map(w => w.text);
-      const { words: newWords, viewport: newViewport } = calculateResponsiveLayout(currentWordTexts);
+      const currentCards = words.map(w => ({ text: w.text, imageUrl: w.imageUrl }));
+      const { words: newWords, viewport: newViewport } = calculateResponsiveLayout(currentCards);
       setWords(newWords);
       setViewport(newViewport);
   };

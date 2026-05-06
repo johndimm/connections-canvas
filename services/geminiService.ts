@@ -108,7 +108,7 @@ const fetchPuzzleForDate = async (date: string) => {
   return response.json();
 };
 
-export const fetchDailyPuzzle = async (dayOffset = 0): Promise<{ words: string[], puzzleDate: string }> => {
+export const fetchDailyPuzzle = async (dayOffset = 0): Promise<{ cards: { text: string; imageUrl?: string }[], puzzleDate: string }> => {
   const now = new Date();
   now.setDate(now.getDate() + dayOffset);
   // Use local date to avoid requesting "tomorrow's" puzzle for West Coast users in the evening
@@ -119,11 +119,14 @@ export const fetchDailyPuzzle = async (dayOffset = 0): Promise<{ words: string[]
   ].join('-');
 
   const data = await fetchPuzzleForDate(puzzleDate);
-  type Card = { content?: string; image_alt_text?: string; position: number };
+  type Card = { content?: string; image_url?: string; image_alt_text?: string; position: number };
   const allCards: Card[] = (data.categories ?? []).flatMap(
     (cat: { cards: Card[] }) => cat.cards ?? []
   );
   allCards.sort((a, b) => a.position - b.position);
-  const words = allCards.map(card => card.content ?? card.image_alt_text).filter(Boolean) as string[];
-  return { words, puzzleDate };
+  const cards = allCards.map(card => ({
+    text: (card.content ?? card.image_alt_text ?? '') as string,
+    imageUrl: card.image_url,
+  })).filter(c => c.text || c.imageUrl);
+  return { cards, puzzleDate };
 };

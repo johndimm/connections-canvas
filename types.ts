@@ -1,10 +1,11 @@
 export interface WordItem {
   id: string;
   text: string;
+  imageUrl?: string;
   x: number;
   y: number;
-  groupColor?: string; // If identified by AI or user
-  isLocked?: boolean; // If part of a submitted/correct group
+  groupColor?: string;
+  isLocked?: boolean;
 }
 
 export interface GroupSuggestion {
