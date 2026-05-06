@@ -119,10 +119,11 @@ export const fetchDailyPuzzle = async (dayOffset = 0): Promise<{ words: string[]
   ].join('-');
 
   const data = await fetchPuzzleForDate(puzzleDate);
-  const allCards: { content: string; position: number }[] = data.categories.flatMap(
-    (cat: { cards: { content: string; position: number }[] }) => cat.cards
+  type Card = { content?: string; image_alt_text?: string; position: number };
+  const allCards: Card[] = (data.categories ?? []).flatMap(
+    (cat: { cards: Card[] }) => cat.cards ?? []
   );
   allCards.sort((a, b) => a.position - b.position);
-  const words = allCards.map(card => card.content).filter(Boolean);
+  const words = allCards.map(card => card.content ?? card.image_alt_text).filter(Boolean) as string[];
   return { words, puzzleDate };
 };
