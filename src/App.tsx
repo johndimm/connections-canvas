@@ -5,6 +5,8 @@ import { DraggableWord } from './components/DraggableWord';
 import { fetchDailyPuzzle } from '../services/geminiService';
 import { Loader2, AlertCircle, RefreshCw, ZoomIn, ZoomOut, Move } from 'lucide-react';
 
+const STORAGE_KEY = `connections-canvas-${new Date().toLocaleDateString('en-CA')}`;
+
 const shuffle = <T,>(array: T[]): T[] => {
   const newArray = [...array];
   for (let i = newArray.length - 1; i > 0; i--) {
@@ -62,13 +64,35 @@ const App: React.FC = () => {
   useEffect(() => {
     if (hasInitialized.current) return;
     fetchDailyPuzzle()
-      .then(({ words }) => initializeBoard(words.slice(0, 16)))
+      .then(({ words: fetchedWords }) => {
+        const wordList = fetchedWords.slice(0, 16);
+        try {
+          const savedRaw = localStorage.getItem(STORAGE_KEY);
+          if (savedRaw) {
+            const saved = JSON.parse(savedRaw);
+            const savedTexts = new Set<string>(saved.words.map((w: WordItem) => w.text));
+            if (saved.words.length === wordList.length && wordList.every(t => savedTexts.has(t))) {
+              setWords(saved.words);
+              setViewport(saved.viewport);
+              setIsInitializing(false);
+              hasInitialized.current = true;
+              return;
+            }
+          }
+        } catch {}
+        initializeBoard(wordList);
+      })
       .catch(err => {
         console.error("Init error:", err);
         setErrorMsg("Could not load today's puzzle. Please try again later.");
         setIsInitializing(false);
       });
   }, [initializeBoard]);
+
+  useEffect(() => {
+    if (words.length === 0) return;
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ words, viewport }));
+  }, [words, viewport]);
 
   const handlePointerDown = (e: React.PointerEvent) => {
     if ((e.target as HTMLElement).closest('[data-draggable="true"]')) return;

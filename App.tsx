@@ -87,7 +87,22 @@ const App: React.FC = () => {
     try {
       const { cards, puzzleDate: date } = await fetchDailyPuzzle(dayOffset);
       setPuzzleDate(date);
-      initializeBoard(cards.slice(0, 16));
+      const cardList = cards.slice(0, 16);
+      try {
+        const savedRaw = localStorage.getItem(`connections-canvas-${date}`);
+        if (savedRaw) {
+          const saved = JSON.parse(savedRaw);
+          const savedTexts = new Set<string>(saved.words.map((w: WordItem) => w.text));
+          if (saved.words.length === cardList.length && cardList.every((c: { text: string }) => savedTexts.has(c.text))) {
+            setWords(saved.words);
+            setViewport(saved.viewport);
+            setIsInitializing(false);
+            hasInitialized.current = true;
+            return;
+          }
+        }
+      } catch {}
+      initializeBoard(cardList);
     } catch (err) {
       console.error("Load puzzle error:", err);
       if (isInitial) {
@@ -103,6 +118,11 @@ const App: React.FC = () => {
     if (hasInitialized.current) return;
     loadPuzzle(0, true);
   }, [loadPuzzle]);
+
+  useEffect(() => {
+    if (words.length === 0 || !puzzleDate) return;
+    localStorage.setItem(`connections-canvas-${puzzleDate}`, JSON.stringify({ words, viewport }));
+  }, [words, viewport, puzzleDate]);
 
   const handlePointerDown = (e: React.PointerEvent) => {
     if ((e.target as HTMLElement).closest('[data-draggable="true"]')) {
