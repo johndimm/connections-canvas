@@ -94,11 +94,21 @@ const App: React.FC = () => {
           const saved = JSON.parse(savedRaw);
           const savedTexts = new Set<string>(saved.words.map((w: WordItem) => w.text));
           if (saved.words.length === cardList.length && cardList.every((c: { text: string }) => savedTexts.has(c.text))) {
-            setWords(saved.words);
-            setViewport(saved.viewport);
-            setIsInitializing(false);
-            hasInitialized.current = true;
-            return;
+            const { x: vx, y: vy, scale } = saved.viewport;
+            const tileW = 150, tileH = 80;
+            const screenW = window.innerWidth, screenH = window.innerHeight;
+            const anyVisible = saved.words.some((w: WordItem) => {
+              const sx = vx + w.x * scale;
+              const sy = vy + w.y * scale;
+              return sx + tileW * scale > 0 && sx < screenW && sy + tileH * scale > 0 && sy < screenH;
+            });
+            if (anyVisible) {
+              setWords(saved.words);
+              setViewport(saved.viewport);
+              setIsInitializing(false);
+              hasInitialized.current = true;
+              return;
+            }
           }
         }
       } catch {}
@@ -214,6 +224,7 @@ const App: React.FC = () => {
   };
 
   const handleResetLayout = () => {
+      if (puzzleDate) localStorage.removeItem(`connections-canvas-${puzzleDate}`);
       const currentCards = words.map(w => ({ text: w.text, imageUrl: w.imageUrl }));
       const { words: newWords, viewport: newViewport } = calculateResponsiveLayout(currentCards);
       setWords(newWords);
