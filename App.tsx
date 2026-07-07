@@ -2,7 +2,7 @@ import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { DndContext, DragEndEvent, useSensor, useSensors, PointerSensor, DragStartEvent } from '@dnd-kit/core';
 import { WordItem } from './types';
 import { DraggableWord } from './components/DraggableWord';
-import { fetchDailyPuzzle } from './services/geminiService';
+import { fetchDailyPuzzle, isPuzzleAvailable } from './services/geminiService';
 import { Loader2, AlertCircle, RefreshCw, ZoomIn, ZoomOut, Move } from 'lucide-react';
 
 
@@ -14,6 +14,7 @@ const App: React.FC = () => {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [puzzleDate, setPuzzleDate] = useState<string | null>(null);
   const [switchError, setSwitchError] = useState<string | null>(null);
+  const [tomorrowAvailable, setTomorrowAvailable] = useState(false);
   
   // Viewport State for Infinite Canvas
   const [viewport, setViewport] = useState({ x: 0, y: 0, scale: 1 });
@@ -25,7 +26,7 @@ const App: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const isPanning = useRef(false);
   const lastPanPoint = useRef({ x: 0, y: 0 });
-  const lastPinchDist = useRef<number | null>(null);
+  const lastPinch = useRef<{ dist: number; midX: number; midY: number } | null>(null);
   const activeTouches = useRef(0);
 
   const sensors = useSensors(
@@ -119,7 +120,7 @@ const App: React.FC = () => {
         setErrorMsg("Could not load today's puzzle. Please try again later.");
         setIsInitializing(false);
       } else {
-        setSwitchError("Not available yet — check back after 9 PM PT.");
+        setSwitchError("Tomorrow's puzzle isn't available yet — check back later.");
       }
     }
   }, [initializeBoard]);
@@ -128,6 +129,27 @@ const App: React.FC = () => {
     if (hasInitialized.current) return;
     loadPuzzle(0, true);
   }, [loadPuzzle]);
+
+  // Show the "tomorrow's puzzle" link as soon as NYT actually serves it,
+  // rather than guessing at a release time. Re-check when the tab regains focus.
+  useEffect(() => {
+    if (tomorrowAvailable) return;
+    let cancelled = false;
+    const check = () => {
+      isPuzzleAvailable(1).then(ok => {
+        if (!cancelled && ok) setTomorrowAvailable(true);
+      });
+    };
+    check();
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') check();
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      cancelled = true;
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+  }, [tomorrowAvailable]);
 
   useEffect(() => {
     if (words.length === 0 || !puzzleDate) return;
@@ -138,13 +160,15 @@ const App: React.FC = () => {
     if ((e.target as HTMLElement).closest('[data-draggable="true"]')) {
        return;
     }
+    // Only the first finger pans; a second finger means pinch, handled by touch events
+    if (!e.isPrimary || activeTouches.current > 1) return;
     isPanning.current = true;
     lastPanPoint.current = { x: e.clientX, y: e.clientY };
     (e.target as HTMLElement).setPointerCapture(e.pointerId);
   };
 
   const handlePointerMove = (e: React.PointerEvent) => {
-    if (!isPanning.current) return;
+    if (!isPanning.current || !e.isPrimary || activeTouches.current > 1) return;
     const dx = e.clientX - lastPanPoint.current.x;
     const dy = e.clientY - lastPanPoint.current.y;
     setViewport(prev => ({
@@ -157,37 +181,58 @@ const App: React.FC = () => {
 
   const handlePointerUp = (e: React.PointerEvent) => {
     isPanning.current = false;
-    lastPinchDist.current = null;
+    lastPinch.current = null;
     if (e.target instanceof HTMLElement && e.target.hasPointerCapture(e.pointerId)) {
         e.target.releasePointerCapture(e.pointerId);
     }
   };
 
+  const readPinch = (e: React.TouchEvent) => {
+      const t1 = e.touches[0];
+      const t2 = e.touches[1];
+      return {
+          dist: Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY),
+          midX: (t1.clientX + t2.clientX) / 2,
+          midY: (t1.clientY + t2.clientY) / 2,
+      };
+  };
+
   const handleTouchStart = (e: React.TouchEvent) => {
       activeTouches.current = e.touches.length;
+      if (e.touches.length === 2) {
+          isPanning.current = false;
+          lastPinch.current = readPinch(e);
+      }
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
      activeTouches.current = e.touches.length;
      if (e.touches.length === 2) {
-        const t1 = e.touches[0];
-        const t2 = e.touches[1];
-        const dist = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
-        
-        if (lastPinchDist.current !== null) {
-            const delta = dist - lastPinchDist.current;
-            const zoomFactor = delta * 0.005;
-            const newScale = Math.max(0.1, Math.min(3, viewport.scale + zoomFactor));
-            setViewport(prev => ({ ...prev, scale: newScale }));
-        }
-        lastPinchDist.current = dist;
+        isPanning.current = false;
+        const pinch = readPinch(e);
+        const prev = lastPinch.current;
+        lastPinch.current = pinch;
+        if (!prev) return;
+        const ratio = pinch.dist / prev.dist;
+        setViewport(v => {
+            const newScale = Math.max(0.1, Math.min(3, v.scale * ratio));
+            // Keep the world point under the pinch midpoint fixed while zooming,
+            // and follow the midpoint as it moves (two-finger pan)
+            const worldX = (prev.midX - v.x) / v.scale;
+            const worldY = (prev.midY - v.y) / v.scale;
+            return {
+                scale: newScale,
+                x: pinch.midX - worldX * newScale,
+                y: pinch.midY - worldY * newScale,
+            };
+        });
      }
   };
 
   const handleTouchEnd = (e: React.TouchEvent) => {
       activeTouches.current = e.touches.length;
       if (e.touches.length < 2) {
-          lastPinchDist.current = null;
+          lastPinch.current = null;
       }
   };
   
@@ -236,9 +281,7 @@ const App: React.FC = () => {
     return [d.getFullYear(), String(d.getMonth()+1).padStart(2,'0'), String(d.getDate()).padStart(2,'0')].join('-');
   })();
   const isTomorrow = puzzleDate != null && puzzleDate > todayLocalStr;
-  // Tomorrow's puzzle releases at midnight ET — show the link once ET date has advanced past local date
-  const etDateStr = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
-  const showTomorrowLink = isTomorrow || etDateStr > todayLocalStr;
+  const showTomorrowLink = isTomorrow || tomorrowAvailable;
 
   const dateStr = puzzleDate
     ? new Date(puzzleDate + 'T12:00:00Z').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
@@ -280,8 +323,17 @@ const App: React.FC = () => {
         onWheel={(e) => {
             if (e.ctrlKey || e.metaKey) {
                  e.preventDefault();
-                 const zoomFactor = -e.deltaY * 0.001;
-                 setViewport(prev => ({ ...prev, scale: Math.max(0.1, Math.min(3, prev.scale + zoomFactor)) }));
+                 const { clientX, clientY, deltaY } = e;
+                 setViewport(prev => {
+                     const newScale = Math.max(0.1, Math.min(3, prev.scale * Math.exp(-deltaY * 0.002)));
+                     const worldX = (clientX - prev.x) / prev.scale;
+                     const worldY = (clientY - prev.y) / prev.scale;
+                     return {
+                         scale: newScale,
+                         x: clientX - worldX * newScale,
+                         y: clientY - worldY * newScale,
+                     };
+                 });
             }
         }}
     >

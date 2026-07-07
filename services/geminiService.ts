@@ -108,15 +108,28 @@ const fetchPuzzleForDate = async (date: string) => {
   return response.json();
 };
 
-export const fetchDailyPuzzle = async (dayOffset = 0): Promise<{ cards: { text: string; imageUrl?: string }[], puzzleDate: string }> => {
+// Local date to avoid requesting "tomorrow's" puzzle for West Coast users in the evening
+const localDateStr = (dayOffset = 0) => {
   const now = new Date();
   now.setDate(now.getDate() + dayOffset);
-  // Use local date to avoid requesting "tomorrow's" puzzle for West Coast users in the evening
-  const puzzleDate = [
+  return [
     now.getFullYear(),
     String(now.getMonth() + 1).padStart(2, '0'),
     String(now.getDate()).padStart(2, '0'),
   ].join('-');
+};
+
+export const isPuzzleAvailable = async (dayOffset = 0): Promise<boolean> => {
+  try {
+    const response = await fetch(`/api/nyt/svc/connections/v2/${localDateStr(dayOffset)}.json`);
+    return response.ok;
+  } catch {
+    return false;
+  }
+};
+
+export const fetchDailyPuzzle = async (dayOffset = 0): Promise<{ cards: { text: string; imageUrl?: string }[], puzzleDate: string }> => {
+  const puzzleDate = localDateStr(dayOffset);
 
   const data = await fetchPuzzleForDate(puzzleDate);
   type Card = { content?: string; image_url?: string; image_alt_text?: string; position: number };
