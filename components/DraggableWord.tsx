@@ -4,14 +4,12 @@ import { WordItem } from '../types';
 
 interface DraggableWordProps {
   word: WordItem;
-  isSelected: boolean;
-  onToggleSelect: (id: string) => void;
   width?: number;
   height?: number;
   scale?: number;
 }
 
-export const DraggableWord: React.FC<DraggableWordProps> = memo(({ word, isSelected, onToggleSelect, width = 150, height = 80, scale = 1 }) => {
+export const DraggableWord: React.FC<DraggableWordProps> = memo(({ word, width = 150, height = 80, scale = 1 }) => {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: word.id,
     data: { ...word },
@@ -39,35 +37,35 @@ export const DraggableWord: React.FC<DraggableWordProps> = memo(({ word, isSelec
     position: 'absolute',
     touchAction: 'none',
     zIndex: isDragging ? 100 : 1,
-    
+
     width: `${width}px`,
     height: `${height}px`,
-    
-    backgroundColor: isSelected ? '#5a594e' : '#efefe6',
-    color: isSelected ? '#ffffff' : '#000000',
+
+    backgroundColor: '#efefe6',
+    color: '#000000',
     borderRadius: '6px',
-    
+
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     padding: word.imageUrl ? '0' : '8px',
     textAlign: 'center',
-    
+
     fontFamily: '"Libre Franklin", sans-serif',
     fontWeight: 800,
     fontSize: getFontSize(),
     textTransform: 'uppercase',
     letterSpacing: '0.02em',
     lineHeight: 1,
-    
+
     cursor: 'grab',
     userSelect: 'none',
-    
-    boxShadow: isDragging 
-        ? '0 12px 30px rgba(0,0,0,0.15)' 
+
+    boxShadow: isDragging
+        ? '0 12px 30px rgba(0,0,0,0.15)'
         : '0 1px 2px rgba(0,0,0,0.05)',
-        
-    transition: isDragging ? 'none' : 'transform 0.1s, background-color 0.1s, color 0.1s',
+
+    transition: isDragging ? 'none' : 'transform 0.1s',
     opacity: isDragging ? 0.9 : 1,
   };
 
@@ -77,7 +75,6 @@ export const DraggableWord: React.FC<DraggableWordProps> = memo(({ word, isSelec
       style={baseStyle}
       {...listeners}
       {...attributes}
-      onClick={() => onToggleSelect(word.id)}
     >
       {word.imageUrl ? (
         <img
@@ -89,7 +86,6 @@ export const DraggableWord: React.FC<DraggableWordProps> = memo(({ word, isSelec
             height: '100%',
             objectFit: 'contain',
             borderRadius: '6px',
-            filter: isSelected ? 'invert(1)' : 'invert(0)',
           }}
         />
       ) : (

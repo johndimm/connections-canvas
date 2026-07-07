@@ -9,7 +9,6 @@ import { Loader2, AlertCircle, RefreshCw, ZoomIn, ZoomOut, Move } from 'lucide-r
 
 const App: React.FC = () => {
   const [words, setWords] = useState<WordItem[]>([]);
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isInitializing, setIsInitializing] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [puzzleDate, setPuzzleDate] = useState<string | null>(null);
@@ -259,15 +258,6 @@ const App: React.FC = () => {
       return activeTouches.current > 1;
   };
 
-  const handleToggleSelect = (id: string) => {
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else if (next.size < 4) next.add(id);
-      return next;
-    });
-  };
-
   const handleResetLayout = () => {
       if (puzzleDate) localStorage.removeItem(`connections-canvas-${puzzleDate}`);
       const currentCards = words.map(w => ({ text: w.text, imageUrl: w.imageUrl }));
@@ -403,8 +393,6 @@ const App: React.FC = () => {
               <div key={word.id} data-draggable="true" className="absolute" style={{ left: 0, top: 0 }}> 
                   <DraggableWord
                     word={word}
-                    isSelected={selectedIds.has(word.id)}
-                    onToggleSelect={handleToggleSelect}
                     width={layoutConfig.tileW}
                     height={layoutConfig.tileH}
                     scale={viewport.scale}
