@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>About · Connections Scratchpad</title>
+  <link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root { color-scheme: dark; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { min-height: 100vh; background: #000; color: #e5e5e5; font-family: 'Libre Franklin', -apple-system, BlinkMacSystemFont, sans-serif; }
+    .bar { display: flex; align-items: center; justify-content: space-between; padding: 12px 20px; border-bottom: 1px solid #202024; }
+    .left { display: flex; align-items: center; gap: 10px; }
+    .chip { display: inline-flex; align-items: center; gap: 6px; border: 1px solid #2a2a2e; background: #151517; color: #a1a1aa; border-radius: 10px; padding: 8px 12px; font-size: 13px; text-decoration: none; }
+    .chip:hover { color: #e5e5e5; }
+    main { max-width: 680px; margin: 0 auto; padding: 56px 24px; }
+    h1 { font-size: 34px; color: #fff; }
+    .sub { font-size: 18px; color: #a1a1aa; margin-top: 10px; }
+    .body { margin-top: 28px; font-size: 15.5px; line-height: 1.6; color: #d4d4d8; }
+    h2 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: #71717a; margin-top: 30px; }
+    .tags { margin-top: 12px; display: flex; flex-wrap: wrap; gap: 8px; }
+    .tag { border: 1px solid #26262a; background: #141416; color: #c4c4c8; border-radius: 8px; padding: 6px 12px; font-size: 13px; }
+    .footer { margin-top: 36px; padding-top: 22px; border-top: 1px solid #202024; display: flex; flex-wrap: wrap; align-items: center; gap: 20px; font-size: 14px; }
+    .primary { background: #f4f4f5; color: #18181b; font-weight: 600; border-radius: 10px; padding: 10px 18px; text-decoration: none; }
+    .muted { color: #a1a1aa; text-decoration: none; }
+    .allapps { margin-left: auto; color: #71717a; text-decoration: none; }
+  </style>
+</head>
+<body>
+  <div class="bar">
+    <div class="left">
+      <a class="chip" href="https://johndimm.vercel.app" title="All apps — John Dimm" aria-label="All apps">🏠</a>
+      <span style="font-size:17px;font-weight:600;color:#fff;">Connections Scratchpad</span>
+    </div>
+    <a class="chip" href="/">Open app ↗</a>
+  </div>
+  <main>
+    <h1>Connections Scratchpad</h1>
+    <p class="sub">For the New York Times Connections game</p>
+    <div class="body">
+      <p>The NYT Connections game is addictive and oddly stressful. It often leads you down the garden path with a red herring that you only realize you have fallen for after you start racking up errors. Would it be cheating to print the puzzle, cut out the tiles, and rearrange them on the floor to try out different groupings? I think not. This app does that on your screen.</p>
+    </div>
+    <h2>Built with</h2>
+    <div class="tags"><span class="tag">React</span></div>
+    <div class="footer">
+      <a class="primary" href="/">Open the app ↗</a>
+      <a class="muted" href="https://github.com/johndimm/connections-canvas" target="_blank" rel="noopener noreferrer">GitHub</a>
+      <a class="allapps" href="https://johndimm.vercel.app">← All apps</a>
+    </div>
+  </main>
+</body>
+</html>
