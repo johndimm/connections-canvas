@@ -245,6 +245,11 @@ const App: React.FC = () => {
         </DndContext>
       </div>
 
+      <div className="absolute bottom-3 left-3 z-20 pointer-events-auto">
+        <a href="https://johndimm.org" title="All apps — John Dimm" aria-label="All apps"
+           className="inline-flex items-center justify-center w-[34px] h-[34px] rounded-[9px] border border-stone-300 bg-white/90 text-stone-700 text-[15px] no-underline shadow-sm hover:bg-stone-50">🏠</a>
+      </div>
+
       <div className="absolute bottom-6 right-6 flex flex-col gap-2 z-20 pointer-events-auto">
         <button onClick={handleResetLayout} className="p-3 bg-white shadow-lg rounded-full text-stone-700 hover:bg-stone-50 active:scale-95 border border-stone-200 mb-2" title="Reset Layout">
           <RefreshCw size={24} />
