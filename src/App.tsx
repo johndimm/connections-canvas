@@ -246,7 +246,7 @@ const App: React.FC = () => {
       </div>
 
       <div className="absolute bottom-3 left-3 z-20 pointer-events-auto">
-        <a href="https://johndimm.org" title="All apps — John Dimm" aria-label="All apps"
+        <a href="https://www.johndimm.org" title="All apps — John Dimm" aria-label="All apps"
            className="inline-flex items-center justify-center w-[34px] h-[34px] rounded-[9px] border border-stone-300 bg-white/90 text-stone-700 text-[15px] no-underline shadow-sm hover:bg-stone-50">🏠</a>
       </div>
 
